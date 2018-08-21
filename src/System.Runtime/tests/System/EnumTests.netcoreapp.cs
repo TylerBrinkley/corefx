@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -13,7 +12,7 @@ namespace System.Tests
     {
         [Theory]
         [MemberData(nameof(Parse_TestData))]
-        public static void Parse_NetCoreApp11<T>(string value, bool ignoreCase, T expected) where T : struct
+        public static void Parse_NetCoreApp11<T>(string value, bool ignoreCase, T expected) where T : struct, Enum
         {
             object result;
             if (!ignoreCase)
@@ -39,7 +38,7 @@ namespace System.Tests
             parseMethod.Invoke(null, new object[] { enumType, value, ignoreCase, exceptionType });
         }
 
-        public static void Parse_Generic_Invalid_NetCoreApp11<T>(Type enumType, string value, bool ignoreCase, Type exceptionType) where T : struct
+        public static void Parse_Generic_Invalid_NetCoreApp11<T>(Type enumType, string value, bool ignoreCase, Type exceptionType) where T : struct, Enum
         {
             object result = null;
             if (!ignoreCase)
@@ -72,35 +71,6 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> UnsupportedEnumType_TestData()
-        {
-#if netcoreapp
-            yield return new object[] { s_floatEnumType, 1.0f };
-            yield return new object[] { s_doubleEnumType, 1.0 };
-            yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
-            yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
-#else
-            return Array.Empty<object[]>();
-#endif //netcoreapp
-        }
-
-        [Theory]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void GetName_Unsupported_ThrowsArgumentException(Type enumType, object value)
-        {
-            AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(enumType, value));
-        }
-
-        [Theory]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void IsDefined_UnsupportedEnumType_ThrowsInvalidOperationException(Type enumType, object value)
-        {
-            // A Contract.Assert(false, "...") is hit for certain unsupported primitives
-            Exception ex = Assert.ThrowsAny<Exception>(() => Enum.IsDefined(enumType, value));
-            string exName = ex.GetType().Name;
-            Assert.True(exName == nameof(InvalidOperationException) || exName == "ContractException");
-        }
-
 #if netcoreapp
         [Fact]
         public static void ToString_InvalidUnicodeChars()
@@ -112,46 +82,6 @@ namespace System.Tests
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString());
         }
 #endif //netcoreapp
-
-        public static IEnumerable<object[]> UnsupportedEnum_TestData()
-        {
-#if netcoreapp
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
-#else
-            return Array.Empty<object[]>();
-#endif //netcoreapp
-        }
-
-        [Theory]
-        [MemberData(nameof(UnsupportedEnum_TestData))]
-        public static void ToString_UnsupportedEnumType_ThrowsArgumentException(Enum e)
-        {
-            // A Contract.Assert(false, "...") is hit for certain unsupported primitives
-            Exception formatXException = Assert.ThrowsAny<Exception>(() => e.ToString("X"));
-            string formatXExceptionName = formatXException.GetType().Name;
-            Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");
-        }
-
-        [Theory]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void Format_UnsupportedEnumType_ThrowsArgumentException(Type enumType, object value)
-        {
-            // A Contract.Assert(false, "...") is hit for certain unsupported primitives
-            Exception formatGException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "G"));
-            string formatGExceptionName = formatGException.GetType().Name;
-            Assert.True(formatGExceptionName == nameof(InvalidOperationException) || formatGExceptionName == "ContractException");
-
-            Exception formatXException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "X"));
-            string formatXExceptionName = formatXException.GetType().Name;
-            Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");
-
-            Exception formatFException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "F"));
-            string formatFExceptionName = formatFException.GetType().Name;
-            Assert.True(formatFExceptionName == nameof(InvalidOperationException) || formatFExceptionName == "ContractException");
-        }
 
 #if netcoreapp // .NetNative does not support RefEmit nor any other way to create Enum types with unusual backing types.
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)

@@ -388,7 +388,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetEnumName_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("value", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumName(""));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumName(""));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().GetEnumName(null));
         }
 
@@ -459,7 +459,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void IsEnumDefined_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(null));
             Assert.Throws<InvalidOperationException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(new NonGenericClassWithNoInterfaces()));
         }
