@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
 
   <!-- For detailed explanation of the reference versions see:
@@ -9,59 +9,48 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>ac52aa5ded15d2f63486cfe69c03e237da7f8df0</CoreFxCurrentRef>
-    <ProjectNTfsCurrentRef>ac52aa5ded15d2f63486cfe69c03e237da7f8df0</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>ac52aa5ded15d2f63486cfe69c03e237da7f8df0</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>5c4b04430e5fbcf4e380fb2c588dce595bae9895</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>5c4b04430e5fbcf4e380fb2c588dce595bae9895</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-    <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>f2a2e6a48d26036fbb7e9a3aced37e7dfce677fc</CoreFxOptimizationDataCurrentRef>
+    <BuildToolsCurrentRef>d8379e3f82c0b3b917d76828e064bd74ba718bfd</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
   <PropertyGroup>
-    <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
-    <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
-
     <!-- SNI runtime package -->
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.19073.1</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19073.1</MicrosoftNETCorePlatformsPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27323-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27323-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27323-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27421-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27421-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27421-00</ProjectNTfsTestILCPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
     <!-- xunit test dependency version  -->
-    <MicrosoftNetTestSdkPackageVersion>16.0.0-preview-20181205-02</MicrosoftNetTestSdkPackageVersion>
+    <MicrosoftNETTestSdkPackageVersion>16.0.1</MicrosoftNETTestSdkPackageVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <MicrosoftDotNetUapTestToolsPackageVersion>1.0.30</MicrosoftDotNetUapTestToolsPackageVersion>
+    <MicrosoftDotNetUapTestToolsPackageVersion>1.0.31</MicrosoftDotNetUapTestToolsPackageVersion>
 
     <!-- Code coverage package version -->
     <CoverletConsolePackageVersion>1.4.0</CoverletConsolePackageVersion>
     <DotNetReportGeneratorGlobalToolPackageVersion>4.0.5</DotNetReportGeneratorGlobalToolPackageVersion>
 
-    <!-- Roslyn optimization data package version -->
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
     <TestILCAmd64retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCAmd64retPackageVersion>
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
-    <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181120-0045</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
-    <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03617-02</BuildToolsPackageVersion>
+    <BuildToolsPackage>Microsoft.DotNet.BuildTools</BuildToolsPackage>
+    <BuildToolsPackageVersion>3.0.0-preview1-03715-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
@@ -78,17 +67,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RemoteDependencyBuildInfo Include="CoreFx">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="Sni">
       <BuildInfoPath>$(BaseDotNetBuildInfo)sni/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(SniCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="Standard">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/release/2.0.0</BuildInfoPath>
-      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
@@ -102,30 +83,11 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="CoreFxOptimizationData">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)/IBC</BuildInfoPath>
-      <CurrentRef>$(CoreFxOptimizationDataCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
 
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreFx</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCorePlatformsPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.Platforms</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="Standard">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>NETStandardLibraryPackageVersion</ElementName>
-      <PackageId>$(NETStandardLibraryPackageId)</PackageId>
-    </XmlUpdateStep>
     <XmlUpdateStep Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
@@ -150,11 +112,6 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>BuildToolsPackageVersion</ElementName>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreFxOptimizationData">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxOptimizationDataVersion</ElementName>
-      <PackageId>optimization.IBC.CoreFx</PackageId>
     </XmlUpdateStep>
   </ItemGroup>
 
@@ -183,10 +140,6 @@
     <XUnitDependency Include="xunit.runner.console"/>
     <StaticDependency Include="@(XUnitDependency)">
       <Version>$(XUnitPackageVersion)</Version>
-    </StaticDependency>
-
-    <StaticDependency Include="Microsoft.NET.Test.Sdk">
-      <Version>$(MicrosoftNetTestSdkPackageVersion)</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="xunit.performance.core" />
