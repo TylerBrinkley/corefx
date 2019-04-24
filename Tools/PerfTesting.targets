@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Perf Analysis NuGet package paths -->
+  <PropertyGroup>
+    <PerformanceType Condition="'$(PerformanceType)'==''">Profile</PerformanceType>
+    <TraceEventPackage>Microsoft.Diagnostics.Tracing.TraceEvent\$(TraceEventPackageVersion)</TraceEventPackage>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TraceEventNativePath Include="$(PackagesDir)\$(TraceEventPackage)\lib\native\**\*.*" />
+  </ItemGroup>
+
+  <Target Name="ValidatePerformanceRunType" Condition="'$(IsPerformanceTestProject)' == 'true'" BeforeTargets="GenerateTestExecutionScripts">
+    <Error Condition="'$(PerformanceType)'!='Diagnostic' AND '$(PerformanceType)'!='Profile'" Text="Invalid Performance Type value specified: $(PerformanceType)" />
+  </Target>
+
+  <Target Name ="PublishPerfRunner" Condition="'$(IsPerformanceTestProject)' == 'true'" BeforeTargets="RunTestsForProject">
+    <Copy SourceFiles="@(TraceEventNativePath)" DestinationFiles="@(TraceEventNativePath->'$(StartWorkingDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!-- Set platform specific values. -->
+  <PropertyGroup Condition="'$(TargetOS)'=='Linux'">
+    <PerfTestCommandDotnetExecutable>$RUNTIME_PATH/dotnet</PerfTestCommandDotnetExecutable>
+    <BenchviewDir>$(ToolsDir)Microsoft.BenchView.JSONFormat/tools</BenchviewDir>
+    <PythonCommand>python3.5</PythonCommand>
+    <CliExitErrorCommand>exit 1</CliExitErrorCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)'=='Windows_NT'">
+    <PerfTestCommandDotnetExecutable>%RUNTIME_PATH%\dotnet.exe</PerfTestCommandDotnetExecutable>
+    <BenchviewDir>$(ToolsDir)Microsoft.BenchView.JSONFormat\tools</BenchviewDir>
+    <PythonCommand>py.exe</PythonCommand>
+    <CliExitErrorCommand>EXIT /B 1</CliExitErrorCommand>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPerformanceTestProject)' == 'true' AND '$(BuildingNETFxVertical)' == 'true'">
+    <SupplementalTestData Include="$(RuntimePath)Microsoft.DotNet.XUnitExtensions.dll" />
+    <SupplementalTestData Include="$(RuntimePath)CommandLine.dll" />
+    <SupplementalTestData Include="$(RuntimePath)MarkdownLog.dll" />
+    <SupplementalTestData Include="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll" />
+    <SupplementalTestData Include="$(RuntimePath)xunit.performance.api.dll" />
+    <SupplementalTestData Include="$(RuntimePath)xunit.performance.core.dll" />
+    <SupplementalTestData Include="$(RuntimePath)xunit.performance.execution.dll" />
+    <SupplementalTestData Include="$(RuntimePath)xunit.performance.metrics.dll" />
+    <!-- Copy additional runtime references into the test execution folder. -->
+    <SupplementalTestData Include="@(ReferenceFromRuntime -> '$(RuntimePath)%(Identity).dll')" />
+  </ItemGroup>
+
+  <!-- Sets the flags for the performance counters to be collected in this run. -->
+  <PropertyGroup Condition="'$(PerformanceType)'=='Profile'">
+    <!-- Collect, per benchmark, execution time (stopwatch). -->
+    <CollectFlags>stopwatch</CollectFlags>
+    <RunId>Perf-Profile</RunId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PerformanceType)'=='Diagnostic'">
+    <!-- Collect, per benchmark, the following metrics:
+      1. Allocated bytes in execution thread,
+      2. Any user defined Clr events (through the xUnit Performance Api attributes),
+      3. CPU Usage (Utilization by Process, Stack),
+      4. CPU Performance Counters (Pmc Rollovers)
+    -->
+    <CollectFlags>default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi</CollectFlags>
+    <RunId>Perf-Diagnostic</RunId>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PerfRunnerExecutableName>PerfRunner</PerfRunnerExecutableName>
+    <PerfRunnerExecutable>$(PerfRunnerExecutableName).exe</PerfRunnerExecutable>
+    <PerfRunnerArgs>$(PerfRunnerExecutable) --perf:runid $(RunId) --perf:collect $(CollectFlags) || $(CliExitErrorCommand)</PerfRunnerArgs>
+    <PerfRunnerCommand Condition="'$(BuildingNETFxVertical)' != 'true'">$(PerfTestCommandDotnetExecutable) $(PerfRunnerArgs)</PerfRunnerCommand>
+    <PerfRunnerCommand Condition="'$(BuildingNETFxVertical)' == 'true'">$(PerfRunnerArgs)</PerfRunnerCommand>
+    <MeasurementPyCommand>$(PythonCommand) "$(BenchviewDir)/measurement.py" xunit "$(RunId)-$(AssemblyName).xml" --better desc --drop-first-value --append -o "$(ProjectDir)measurement.json" || $(CliExitErrorCommand)</MeasurementPyCommand>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(IsBenchmarkDotNetProject)' == 'true'">
+    <PerfRunnerExecutableName>BenchmarksRunner</PerfRunnerExecutableName>
+    <PerfRunnerExecutable>$(PerfRunnerExecutableName).exe</PerfRunnerExecutable>
+    <!-- by default we run all benchmarks from given folder -->
+    <PerfRunnerFilter>*</PerfRunnerFilter>
+    <!-- Unix OSes are replacing an asterisk with file name of every file in the directory, so we need to wrap it with '*' to make it work -->
+    <PerfRunnerFilter Condition="'$(TargetOS)'=='Linux'">'*'</PerfRunnerFilter>
+    <CollectFlags>BranchMispredictions+CacheMisses+InstructionRetired</CollectFlags>
+    <!-- currently BenchmarkDotNet uses ETW for Profiling on Windows, when we add new profiler for Unix we are going to add it here -->
+    <ProfilerName Condition="'$(TargetOS)'=='Windows_NT'">ETW</ProfilerName>
+    <!-- by default there are no args, this can be used by the users to pass BenchmarkDotNet arguments here -->
+    <PerfRunnerArgs></PerfRunnerArgs>
+    <!-- when we run a Diagnostic benchmark run we specify the profiler and the hardware counters we want to get -->
+    <PerfRunnerArgs Condition="'$(PerformanceType)'=='Diagnostic'">--profiler $(ProfilerName) --counters $(CollectFlags)</PerfRunnerArgs>
+    <PerfRunnerAllArgs>--filter $(PerfRunnerFilter) $(PerfRunnerArgs) || $(CliExitErrorCommand)</PerfRunnerAllArgs>
+    <PerfRunnerCommand Condition="'$(BuildingNETFxVertical)' != 'true'">$(PerfTestCommandDotnetExecutable) $(PerfRunnerExecutable) $(PerfRunnerAllArgs)</PerfRunnerCommand>
+    <PerfRunnerCommand Condition="'$(BuildingNETFxVertical)' == 'true'">$(PerfRunnerExecutable) $(PerfRunnerAllArgs)</PerfRunnerCommand>
+  </PropertyGroup>
+
+  <!-- Build the commands to be appended to the generated RunTest.[cmd|sh] script. -->
+  <ItemGroup>
+    <PerfTestCommandLines Include="$(PerfRunnerCommand)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)'=='Windows_NT' and '$(LogToBenchview)' == 'true'">
+    <PerfTestCommandLines Include="if exist &quot;$(RunId)-$(AssemblyName).xml&quot; (" />
+    <PerfTestCommandLines Include="$(MeasurementPyCommand)" />
+    <PerfTestCommandLines Include=")" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)'=='Linux' and '$(LogToBenchview)' == 'true'">
+    <PerfTestCommandLines Include="if [ -f &quot;$(RunId)-$(AssemblyName).xml&quot; ]; then" />
+    <PerfTestCommandLines Include="$(MeasurementPyCommand)" />
+    <PerfTestCommandLines Include="fi" />
+  </ItemGroup>
+
+  <!-- Optimizations to configure Xunit for performance -->
+  <ItemGroup Condition="'$(IsPerformanceTestProject)' == 'true'">
+    <!-- TODO: when we no longer need to support legacy .csprojs, this can be converted to 
+        <AssemblyAttribute Include="Microsoft.Xunit.Performance.OptimizeForBenchmarks" />
+    -->
+    <AssemblyInfoLines Include="[assembly:Microsoft.Xunit.Performance.OptimizeForBenchmarks]" />
+  </ItemGroup>
+
+  <Target Name="UploadToBenchview" Condition="'$(LogToBenchview)' == 'true'" AfterTargets="TestAllProjects">
+    <PropertyGroup>
+      <SubmissionPyCommand>$(PythonCommand) "$(BenchviewDir)/submission.py" "$(ProjectDir)measurement.json" --build "$(ProjectDir)build.json" --machine-data "$(ProjectDir)machinedata.json" --metadata "$(ProjectDir)submission-metadata.json" --group "CoreFx" --type "$(BenchviewRuntype)" --config-name "$(ConfigurationGroup)" --config Configuration "$(ConfigurationGroup)" --config OS "$(TargetOS)" --config "RunType" "$(PerformanceType)" -arch "$(Platform)" --machinepool "PerfSnake" -o "$(ProjectDir)submission.json" || $(CliExitErrorCommand)</SubmissionPyCommand>
+      <UploadPyCommand>$(PythonCommand) "$(BenchviewDir)/upload.py" "$(ProjectDir)submission.json" --container corefx || $(CliExitErrorCommand)</UploadPyCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <BenchviewCalls Include="echo $(SubmissionPyCommand)"/>
+      <BenchviewCalls Include="$(SubmissionPyCommand)"/>
+
+      <BenchviewCalls Include="echo $(UploadPyCommand)"/>
+      <BenchviewCalls Include="$(UploadPyCommand)"/>
+    </ItemGroup>
+
+    <Exec Command="%(BenchviewCalls.Identity)"/>
+  </Target>
+
+  <Target Name="WarnForDebugPerfConfiguration"
+          BeforeTargets="RunTestsForProject"
+          Condition="'$(IsPerformanceTestProject)' == 'true' AND !$(ConfigurationGroup.ToLower().Contains('release'))">
+    <Warning Text="You are running performance tests in a configuration other than Release. Your results may be unreliable." />
+  </Target>
+</Project>

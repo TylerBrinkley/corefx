@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- The first two parts of the assembly version represent API version, 
+         the third part is for bugfixes, the fourth is for hotfixes/securtity-updates -->
+    <APIVersion>$([System.Version]::Parse('$(AssemblyVersion)').ToString(2))</APIVersion>
+
+    <_usingRoslyn Condition="'$(MSBuildToolsVersion)' == 'dogfood' OR '$(MSBuildToolsVersion)' == 'Current' OR '$(MSBuildToolsVersion)' &gt;= '14.0'">true</_usingRoslyn>
+
+    <!-- Create a common root output directory for all reference assemblies -->
+    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$(BaseOutputPath)ref/</ReferenceAssemblyOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsReferenceAssembly)'=='true'">
+    <AssemblyName Condition="'$(AssemblyName)' == ''">$(MSBuildProjectName)</AssemblyName>
+    <TargetOutputRelPath Condition="'$(IsCompatAssembly)'=='true'">$(TargetOutputRelPath)Compat/</TargetOutputRelPath>
+    <OutputPath>$(ReferenceAssemblyOutputPath)$(AssemblyName)/$(AssemblyVersion)/$(TargetOutputRelPath)</OutputPath>
+    <IntermediateOutputPath>$(RootIntermediateOutputPath)ref/$(AssemblyName)/$(AssemblyVersion)/$(TargetOutputRelPath)</IntermediateOutputPath>
+
+    <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
+    <!-- if this is a reference assembly deployment project use compile assets 
+         instead of runtime -->
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsReferenceAssembly)'=='true' AND '$(UsingMicrosoftNETSdk)'=='true'">
+    <!-- When not using Sdk-style projects, Microsoft.Common.CurrentVersion.targets,  
+         (which defaults the below properties) is imported after this file, so these properties
+         are getting set correctly.
+         When using Sdk-style projects, Microsoft.Common.CurrentVersion.targets gets imported before
+         this file, so we are overwriting OutputPath too late and we need to re-default these properties. -->
+
+    <OutDir>$(OutputPath)</OutDir>
+    <TargetDir>$([MSBuild]::Escape($([System.IO.Path]::GetFullPath(`$([System.IO.Path]::Combine(`$(MSBuildProjectDirectory)`, `$(OutDir)`))`))))</TargetDir>
+    <TargetPath>$(TargetDir)$(TargetFileName)</TargetPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsReferenceAssembly)'=='true'">
+    <!-- All reference assemblies should have the 0x70 flag which prevents them from loading 
+         and the ReferenceAssemblyAttribute. -->
+    <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />
+    <AssemblyInfoLines Include="[assembly:System.Reflection.AssemblyFlags((System.Reflection.AssemblyNameFlags)0x70)]" />
+  </ItemGroup>
+
+  <!-- Roslyn requires the runtimemetadataversion parameter when building a core assembly -->
+  <Target Name="AddCoreAssemblyResponseFile" Condition="'$(IsCoreAssembly)' == 'true' AND '$(_usingRoslyn)' == 'true'" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <CompilerResponseFile Condition="'$(CompilerResponseFile)'!=''">$(MSBuildThisFileDirectory)coreAssembly.rsp;$(CompilerResponseFile)</CompilerResponseFile>
+      <CompilerResponseFile Condition="'$(CompilerResponseFile)'==''">$(MSBuildThisFileDirectory)coreAssembly.rsp</CompilerResponseFile>
+    </PropertyGroup>
+  </Target>
+</Project>

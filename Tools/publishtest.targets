@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask TaskName="PrereleaseResolveNuGetPackageAssets" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="RemoveDuplicatesWithLastOneWinsPolicy" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="ZipFileCreateFromDirectory" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="GenerateAssemblyList" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="GetTargetMachineInfo" Condition="'$(TestWithLocalLibraries)'=='true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <PropertyGroup>
+    <SerializeProjects Condition="'$(TestWithLocalLibraries)'=='true'">true</SerializeProjects>
+  </PropertyGroup>
+
+  <!-- Binplace dirs for the supplemental test data. -->
+  <ItemGroup>
+    <SupplementalTestDataDir Include="$(TestPath)" />
+    <SupplementalTestDataDir Include="$(OutDir)" />
+  </ItemGroup>
+
+  <!-- Copy supplemental test files into specified test directories. -->
+  <Target Name="CopySupplementalTestData"
+          DependsOnTargets="DiscoverTestInputs"
+          Inputs="@(SupplementalTestDataDir);%(SupplementalTestDataDir.Identity)"
+          Outputs="unused">
+
+    <PropertyGroup>
+      <_SupplementalTestDataDir>%(SupplementalTestDataDir.Identity)</_SupplementalTestDataDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_SupplementalTestData Include="@(SupplementalTestData)">
+        <DestinationDir Condition="'%(SupplementalTestData.DestinationDir)' == ''">%(RecursiveDir)</DestinationDir>
+        <DestinationName Condition="'%(SupplementalTestData.DestinationName)' == ''">%(Filename)%(Extension)</DestinationName>
+      </_SupplementalTestData>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_SupplementalTestData)"
+          DestinationFiles="@(_SupplementalTestData -> '$([MSBuild]::NormalizePath('$(_SupplementalTestDataDir)', '%(DestinationDir)', '%(DestinationName)'))')"
+          SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+
+  </Target>
+
+    <!-- archive the test binaries along with some supporting files -->
+  <Target Name="ArchiveTestBuild"
+          Condition="'$(ArchiveTests)' == 'true'"
+          DependsOnTargets="GenerateTestExecutionScripts">
+    <PropertyGroup>
+      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/$(TargetOutputRelPath)</TestArchiveDir>
+      <ProjectJson Condition="!Exists('$(ProjectJson)')">$(OriginalProjectJson)</ProjectJson>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TestProjectName)'==''">
+      <TestProjectName>$(MSBuildProjectName)</TestProjectName>
+    </PropertyGroup>
+
+    <!-- the project json and runner script files need to be included in the archive -->
+    <Copy SourceFiles="$(ProjectJson);$(ProjectLockJson)" DestinationFolder="$(TestPath)" />
+    <MakeDir Directories="$(TestArchiveDir)" />
+    <ZipFileCreateFromDirectory SourceDirectory="$(TestPath)" DestinationArchive="$(TestArchiveDir)$(TestProjectName).zip" OverwriteDestination="true" />
+  </Target>
+
+</Project>
