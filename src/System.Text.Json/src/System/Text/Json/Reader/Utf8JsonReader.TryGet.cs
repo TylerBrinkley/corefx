@@ -281,6 +281,29 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Reads the next JSON token value from the source and parses it to a <see cref="Guid"/>.
+        /// Returns the value if the entire UTF-8 encoded token value can be successfully parsed to a <see cref="Guid"/>
+        /// value.
+        /// Throws exceptions otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <exception cref="FormatException">
+        /// Thrown if the JSON token value is of an unsupported format for a Guid.
+        /// </exception>
+        public Guid GetGuid()
+        {
+            if (!TryGetGuid(out Guid value))
+            {
+                throw new FormatException(SR.FormatGuid);
+            }
+
+            return value;
+        }
+
+        /// <summary>
         /// Reads the next JSON token value from the source and parses it to an <see cref="int"/>.
         /// Returns true if the entire UTF-8 encoded token value can be successfully 
         /// parsed to an <see cref="int"/> value.
@@ -446,8 +469,46 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
+                && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -467,8 +528,103 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
+                && span.Length == bytesConsumed;
+        }
+
+        /// <summary>
+        /// Reads the next JSON token value from the source and parses it to a <see cref="Guid"/>.
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully
+        /// parsed to a <see cref="Guid"/> value. Only supports <see cref="Guid"/> values with hyphens
+        /// and without any surrounding decorations.
+        /// Returns <see langword="false"/> otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        public bool TryGetGuid(out Guid value)
+        {
+            if (TokenType != JsonTokenType.String)
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
+            }
+
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+                if (sequenceLength > JsonConstants.MaximumEscapedGuidLength)
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedGuidLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedGuid(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (span.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(span, out value, out _, 'D');
         }
     }
 }

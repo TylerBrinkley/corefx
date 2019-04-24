@@ -114,7 +114,7 @@ namespace System.Threading.ThreadPools.Tests
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
                 Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                Assert.True(ThreadPool.SetMaxThreads(-1, -1));
+                Assert.Equal(PlatformDetection.IsFullFramework, ThreadPool.SetMaxThreads(-1, -1));
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                 Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
@@ -188,7 +188,7 @@ namespace System.Threading.ThreadPools.Tests
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Triggers an assertion failure.")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
-        private static void SetMinThreadsTo0Test()
+        public static void SetMinThreadsTo0Test()
         {
             int minw, minc, maxw, maxc;
             ThreadPool.GetMinThreads(out minw, out minc);

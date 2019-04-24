@@ -20,7 +20,7 @@ namespace System.Tests
         //
         // For example, a test with an expect result in the format of 0.xxxxxxxxxxxxxxxxx will use
         // CrossPlatformMachineEpsilon for the variance, while an expected result in the format of 0.0xxxxxxxxxxxxxxxxx
-        // will use CrossPlatformMachineEpsilon / 10 and and expected result in the format of x.xxxxxxxxxxxxxxxx will
+        // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxxxxxxxxxxxx will
         // use CrossPlatformMachineEpsilon * 10.
         private const double CrossPlatformMachineEpsilon = 8.8817841970012523e-16;
 
@@ -1080,7 +1080,7 @@ namespace System.Tests
         [InlineData(-0.0, 0.0, 0.0)]
         [InlineData(2.0, -3.0, 2.0)]
         [InlineData(3.0, -2.0, 3.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
@@ -1133,7 +1133,7 @@ namespace System.Tests
         [InlineData(-0.0f, 0.0f, 0.0f)]
         [InlineData(2.0f, -3.0f, 2.0f)]
         [InlineData(3.0f, -2.0f, 3.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
@@ -1193,7 +1193,7 @@ namespace System.Tests
         [InlineData(-0.0, 0.0, -0.0)]
         [InlineData(2.0, -3.0, -3.0)]
         [InlineData(3.0, -2.0, -2.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
@@ -1246,7 +1246,7 @@ namespace System.Tests
         [InlineData(-0.0f, 0.0f, -0.0f)]
         [InlineData(2.0f, -3.0f, -3.0f)]
         [InlineData(3.0f, -2.0f, -2.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
