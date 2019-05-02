@@ -304,7 +304,9 @@ namespace System.Resources
 
             lock (localResourceSets)
             {
+#pragma warning disable CS8619 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/35131
                 foreach ((_, ResourceSet resourceSet) in localResourceSets)
+#pragma warning restore CS8619
                 {
                     resourceSet.Close();
                 }
@@ -415,7 +417,7 @@ namespace System.Resources
             {
                 string fileName = GetResourceFileName(culture);
                 Debug.Assert(MainAssembly != null);
-                Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
+                Stream? stream = MainAssembly.GetManifestResourceStream(_locationInfo!, fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
